@@ -694,9 +694,11 @@ private fun CurrentTilesGrid(
     Column(modifier = Modifier.fillMaxWidth()) {
         HorizontalPager(
             state = pagerState,
+            verticalAlignment = Alignment.Top,
             modifier =
                 Modifier.fillMaxWidth()
                     .height { totalHeight.roundToPx() }
+                    .clip(RoundedCornerShape(GridBackgroundCornerRadius))
                     .border(
                         width = 2.dp,
                         color = primaryColor,
@@ -761,8 +763,8 @@ private fun CurrentTilesGrid(
         Spacer(modifier = Modifier.height(16.dp))
         PagerDots(
             pagerState = pagerState,
-            activeColor = primaryColor,
-            nonActiveColor = MaterialTheme.colorScheme.surfaceVariant,
+            activeColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            nonActiveColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = .5f),
             modifier = Modifier.align(Alignment.CenterHorizontally)
         )
     }
