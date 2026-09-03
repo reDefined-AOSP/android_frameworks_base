@@ -116,6 +116,7 @@ fun Modifier.dragAndDropTileList(
     gridState: LazyGridState,
     contentOffset: () -> Offset,
     dragAndDropState: DragAndDropState,
+    indexOffset: Int = 0,
     onDrop: (TileSpec) -> Unit,
 ): Modifier {
     val target =
@@ -145,7 +146,7 @@ fun Modifier.dragAndDropTileList(
                         }
 
                     targetItem?.let {
-                        dragAndDropState.onTargeting(it.index, insertAfter(it, relativeDragOffset))
+                        dragAndDropState.onTargeting(it.index + indexOffset, insertAfter(it, relativeDragOffset))
                     }
                 }
 

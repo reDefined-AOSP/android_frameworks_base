@@ -44,7 +44,13 @@ import androidx.compose.foundation.clipScrollableContainer
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement.spacedBy
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import com.android.systemui.common.ui.compose.PagerDots
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import com.android.systemui.common.ui.compose.PagerDots
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -671,68 +677,94 @@ private fun CurrentTilesGrid(
     onEditAction: (EditAction) -> Unit,
 ) {
     val currentListState by rememberUpdatedState(listState)
+    val maxRows = 4
+    val columns = listState.columns
     val totalRows = listState.tiles.lastOrNull()?.row ?: 0
+    val pageCount = ((totalRows + 1 + maxRows - 1) / maxRows).coerceAtLeast(1)
+
     val totalHeight by
         animateDpAsState(
-            gridHeight(totalRows + 1, TileHeight, TileArrangementPadding, CurrentTilesGridPadding),
+            gridHeight(maxRows, TileHeight, TileArrangementPadding, CurrentTilesGridPadding),
             label = "QSEditCurrentTilesGridHeight",
         )
-    val gridState = rememberLazyGridState()
-    var gridContentOffset by remember { mutableStateOf(Offset(0f, 0f)) }
     val coroutineScope = rememberCoroutineScope()
-
     val primaryColor = MaterialTheme.colorScheme.primary
-    TileLazyGrid(
-        state = gridState,
-        columns = GridCells.Fixed(listState.columns),
-        contentPadding = PaddingValues(CurrentTilesGridPadding),
-        modifier =
-            Modifier.fillMaxWidth()
-                .height { totalHeight.roundToPx() }
-                .border(
-                    width = 2.dp,
-                    color = primaryColor,
-                    shape = RoundedCornerShape(GridBackgroundCornerRadius),
-                )
-                .dragAndDropTileList(gridState, { gridContentOffset }, listState) { spec ->
-                    onEditAction(EditAction.SetTiles(currentListState.tileSpecs()))
-                    selectionState.select(spec)
-                }
-                .onGloballyPositioned { coordinates ->
-                    gridContentOffset = coordinates.positionInRoot()
-                }
-                .drawBehind {
-                    drawRoundRect(
-                        primaryColor,
-                        cornerRadius = CornerRadius(GridBackgroundCornerRadius.toPx()),
-                        alpha = .15f,
+    val pagerState = rememberPagerState(pageCount = { pageCount })
+
+    Column(modifier = Modifier.fillMaxWidth()) {
+        HorizontalPager(
+            state = pagerState,
+            modifier =
+                Modifier.fillMaxWidth()
+                    .height { totalHeight.roundToPx() }
+                    .border(
+                        width = 2.dp,
+                        color = primaryColor,
+                        shape = RoundedCornerShape(GridBackgroundCornerRadius),
                     )
-                }
-                .sysuiResTag(CURRENT_TILES_GRID_TEST_TAG),
-    ) {
-        EditTiles(
-            listState = listState,
-            selectionState = selectionState,
-            gridState = gridState,
-            coroutineScope = coroutineScope,
-            onRemoveTile = { onEditAction(EditAction.RemoveTile(it)) },
-        ) { resizingOperation ->
-            when (resizingOperation) {
-                is TemporaryResizeOperation -> {
-                    currentListState.resizeTile(resizingOperation.spec, resizingOperation.toIcon)
-                }
-                is FinalResizeOperation -> {
-                    with(resizingOperation) {
-                        // Commit the new size of the tile IF the size changed. Do this check before
-                        // a snapshot is taken to avoid saving an unnecessary snapshot
-                        val isIcon = spec !in listState.largeTilesSpecs
-                        if (isIcon != toIcon) {
-                            onEditAction(EditAction.ResizeTile(spec, toIcon))
+                    .drawBehind {
+                        drawRoundRect(
+                            primaryColor,
+                            cornerRadius = CornerRadius(GridBackgroundCornerRadius.toPx()),
+                            alpha = .15f,
+                        )
+                    }
+                    .sysuiResTag(CURRENT_TILES_GRID_TEST_TAG),
+            contentPadding = PaddingValues(0.dp)
+        ) { page ->
+            val gridState = rememberLazyGridState()
+            var gridContentOffset by remember { mutableStateOf(Offset(0f, 0f)) }
+
+            val pageTiles = listState.tiles.filter { it.row in (page * maxRows) until ((page + 1) * maxRows) }
+            val firstPageTile = pageTiles.firstOrNull()
+            val indexOffset = if (firstPageTile != null) listState.tiles.indexOf(firstPageTile) else 0
+
+            TileLazyGrid(
+                state = gridState,
+                columns = GridCells.Fixed(columns),
+                contentPadding = PaddingValues(CurrentTilesGridPadding),
+                modifier =
+                    Modifier.fillMaxWidth()
+                        .dragAndDropTileList(gridState, { gridContentOffset }, listState, indexOffset) { spec ->
+                            onEditAction(EditAction.SetTiles(currentListState.tileSpecs()))
+                            selectionState.select(spec)
+                        }
+                        .onGloballyPositioned { coordinates ->
+                            gridContentOffset = coordinates.positionInRoot()
+                        },
+            ) {
+                EditTiles(
+                    listState = listState,
+                    pageTiles = pageTiles,
+                    indexOffset = indexOffset,
+                    selectionState = selectionState,
+                    gridState = gridState,
+                    coroutineScope = coroutineScope,
+                    onRemoveTile = { onEditAction(EditAction.RemoveTile(it)) },
+                ) { resizingOperation ->
+                    when (resizingOperation) {
+                        is TemporaryResizeOperation -> {
+                            currentListState.resizeTile(resizingOperation.spec, resizingOperation.toIcon)
+                        }
+                        is FinalResizeOperation -> {
+                            with(resizingOperation) {
+                                val isIcon = spec !in listState.largeTilesSpecs
+                                if (isIcon != toIcon) {
+                                    onEditAction(EditAction.ResizeTile(spec, toIcon))
+                                }
+                            }
                         }
                     }
                 }
             }
         }
+        Spacer(modifier = Modifier.height(16.dp))
+        PagerDots(
+            pagerState = pagerState,
+            activeColor = primaryColor,
+            nonActiveColor = MaterialTheme.colorScheme.surfaceVariant,
+            modifier = Modifier.align(Alignment.CenterHorizontally)
+        )
     }
 }
 
@@ -899,6 +931,8 @@ private fun GridCell.key(index: Int): Any {
  */
 fun LazyGridScope.EditTiles(
     listState: EditTileListState,
+    pageTiles: List<GridCell>,
+    indexOffset: Int,
     selectionState: MutableSelectionState,
     gridState: LazyGridState,
     coroutineScope: CoroutineScope,
@@ -906,11 +940,12 @@ fun LazyGridScope.EditTiles(
     onResize: (operation: ResizeOperation) -> Unit,
 ) {
     itemsIndexed(
-        items = listState.tiles,
-        key = { index, item -> item.key(index) },
+        items = pageTiles,
+        key = { index, item -> item.key(index + indexOffset) },
         span = { _, item -> item.span },
         contentType = { _, _ -> TileType },
     ) { index, cell ->
+        val globalIndex = index + indexOffset
         when (cell) {
             is TileGridCell ->
                 if (listState.isMoving(cell.tile.tileSpec)) {
@@ -927,7 +962,7 @@ fun LazyGridScope.EditTiles(
                 } else {
                     TileGridCell(
                         cell = cell,
-                        index = index,
+                        index = globalIndex,
                         dragAndDropState = listState,
                         selectionState = selectionState,
                         gridState = gridState,
