@@ -97,18 +97,24 @@ constructor(
         val squishiness by viewModel.squishinessViewModel.squishiness.collectAsStateWithLifecycle()
         val scope = rememberCoroutineScope()
 
-        if (QSMaterialExpressiveTiles.isEnabled) {
-            ButtonGroupGrid(
-                sizedTiles = sizedTiles,
-                columns = columns,
-                keys = { it.spec },
-                elementKey = { it.spec.toElementKey() },
-                horizontalPadding = dimensionResource(R.dimen.qs_tile_margin_horizontal),
-                modifier = modifier,
-            ) { sizedTile, interactionSource ->
+        val packedPages = remember(sizedTiles, columns) {
+            val tilesWithSize = sizedTiles.map { it to com.android.systemui.qs.panels.shared.model.TileSize(it.width, 1) }
+            com.android.systemui.qs.panels.shared.model.packTilesIntoPages(tilesWithSize, columns = columns, rowsPerPage = 4)
+        }
+        val packedTiles = packedPages.flatten()
+
+        com.android.systemui.qs.panels.ui.compose.PackedTileGrid(
+            packedTiles = packedTiles,
+            columns = columns,
+            rowsPerPage = 4, // 4 rows per page usually
+            tileGap = dimensionResource(R.dimen.qs_tile_margin_horizontal),
+            modifier = modifier,
+        ) { tile, size ->
+            val interactionSource = remember { MutableInteractionSource() }
+            Element(tile.tile.spec.toElementKey(), Modifier) {
                 Tile(
-                    tile = sizedTile.tile,
-                    iconOnly = iconTilesViewModel.isIconTile(sizedTile.tile.spec),
+                    tile = tile.tile,
+                    iconOnly = iconTilesViewModel.isIconTile(tile.tile.spec),
                     squishiness = { squishiness },
                     tileHapticsViewModelFactoryProvider = tileHapticsViewModelFactoryProvider,
                     coroutineScope = scope,
@@ -119,44 +125,6 @@ constructor(
                     bounceableInfo = null,
                     interactionSource = interactionSource,
                 )
-            }
-        } else {
-            val bounceables =
-                remember(sizedTiles) { List(sizedTiles.size) { BounceableTileViewModel() } }
-            val spans by remember(sizedTiles) { derivedStateOf { sizedTiles.fastMap { it.width } } }
-            VerticalSpannedGrid(
-                columns = columns,
-                columnSpacing = dimensionResource(R.dimen.qs_tile_margin_horizontal),
-                rowSpacing = dimensionResource(R.dimen.qs_tile_margin_vertical),
-                spans = spans,
-                keys = { sizedTiles[it].tile.spec },
-                modifier = modifier,
-            ) { spanIndex, column, isFirstInColumn, isLastInColumn ->
-                val it = sizedTiles[spanIndex]
-
-                Element(it.tile.spec.toElementKey(), Modifier) {
-                    Tile(
-                        tile = it.tile,
-                        iconOnly = iconTilesViewModel.isIconTile(it.tile.spec),
-                        squishiness = { squishiness },
-                        tileHapticsViewModelFactoryProvider = tileHapticsViewModelFactoryProvider,
-                        coroutineScope = scope,
-                        bounceableInfo =
-                            bounceables.bounceableInfo(
-                                it,
-                                index = spanIndex,
-                                column = column,
-                                columns = columns,
-                                isFirstInRow = isFirstInColumn,
-                                isLastInRow = isLastInColumn,
-                            ),
-                        detailsViewModel = detailsViewModel,
-                        isVisible = listening,
-                        requestToggleTextFeedback = textFeedbackViewModel::requestShowFeedback,
-                        enableRevealEffect = enableRevealEffect,
-                        interactionSource = null,
-                    )
-                }
             }
         }
 
