@@ -24,9 +24,16 @@ import kotlinx.coroutines.flow.StateFlow
 
 interface IconTilesViewModel {
     val largeTiles: StateFlow<Set<TileSpec>>
+    val featuredTiles: StateFlow<Set<TileSpec>>
 
     fun isIconTile(spec: TileSpec): Boolean
 
+    /**
+     * Resizes [spec].
+     *
+     * If [toIcon] is true, the tile cycles down (Featured -> Large -> Small).
+     * If [toIcon] is false, the tile cycles up (Small -> Large -> Featured).
+     */
     fun resize(spec: TileSpec, toIcon: Boolean)
 }
 
@@ -34,6 +41,7 @@ interface IconTilesViewModel {
 class IconTilesViewModelImpl @Inject constructor(private val interactor: IconTilesInteractor) :
     IconTilesViewModel {
     override val largeTiles = interactor.largeTilesSpecs
+    override val featuredTiles = interactor.featuredTilesSpecs
 
     override fun isIconTile(spec: TileSpec): Boolean = interactor.isIconTile(spec)
 

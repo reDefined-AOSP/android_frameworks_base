@@ -79,6 +79,15 @@ constructor(
             }
             .flowOn(backgroundDispatcher)
 
+    /** Set of [TileSpec] to display as featured 2x2 tiles for the current user. */
+    val featuredTilesSpecs: Flow<Set<TileSpec>> =
+        combine(backupRestorationEvents, userRepository.selectedUserInfo, ::Pair)
+            .flatMapLatest { (_, userInfo) ->
+                val prefs = getSharedPrefs(userInfo.id)
+                prefs.observe().emitOnStart().map { prefs.getFeaturedTilesSpecs() }
+            }
+            .flowOn(backgroundDispatcher)
+
     /** Whether or not the edit icon tooltip was shown for the current user. */
     val editTooltipShown: Flow<Boolean> =
         combine(backupRestorationEvents, userRepository.selectedUserInfo, ::Pair)
@@ -98,12 +107,27 @@ constructor(
         }
     }
 
+    /** Sets for the current user the set of [TileSpec] to display as featured 2x2 tiles. */
+    fun writeFeaturedTileSpecs(specs: Set<TileSpec>) {
+        with(getSharedPrefs(userRepository.getSelectedUserInfo().id)) {
+            writeFeaturedTileSpecs(specs)
+        }
+    }
+
     /** Remove the set of [TileSpec] from the current large tiles. */
     fun removeLargeTileSpecs(specs: Set<TileSpec>) {
         with(getSharedPrefs(userRepository.getSelectedUserInfo().id)) {
             val largeSpecs = getLargeTilesSpecs()
             writeLargeTileSpecs(largeSpecs - specs)
             setLargeTilesDefault(false)
+        }
+    }
+
+    /** Remove the set of [TileSpec] from the current featured tiles. */
+    fun removeFeaturedTileSpecs(specs: Set<TileSpec>) {
+        with(getSharedPrefs(userRepository.getSelectedUserInfo().id)) {
+            val featuredSpecs = getFeaturedTilesSpecs()
+            writeFeaturedTileSpecs(featuredSpecs - specs)
         }
     }
 
@@ -121,6 +145,7 @@ constructor(
             getSharedPrefs(userInfo.id)
                 .edit()
                 .remove(LARGE_TILES_SPECS_KEY)
+                .remove(FEATURED_TILES_SPECS_KEY)
                 .remove(LARGE_TILES_DEFAULT_KEY)
                 .apply()
         }
@@ -130,6 +155,10 @@ constructor(
         edit().putStringSet(LARGE_TILES_SPECS_KEY, specs.map { it.spec }.toSet()).apply()
     }
 
+    private fun SharedPreferences.writeFeaturedTileSpecs(specs: Set<TileSpec>) {
+        edit().putStringSet(FEATURED_TILES_SPECS_KEY, specs.map { it.spec }.toSet()).apply()
+    }
+
     private fun SharedPreferences.getLargeTilesSpecs(): Set<TileSpec> {
         return getStringSet(
                 LARGE_TILES_SPECS_KEY,
@@ -137,6 +166,12 @@ constructor(
             )
             ?.map { TileSpec.create(it) }
             ?.toSet() ?: defaultLargeTilesRepository.defaultLargeTiles
+    }
+
+    private fun SharedPreferences.getFeaturedTilesSpecs(): Set<TileSpec> {
+        return getStringSet(FEATURED_TILES_SPECS_KEY, emptySet())
+            ?.map { TileSpec.create(it) }
+            ?.toSet() ?: emptySet()
     }
 
     /**
@@ -197,6 +232,7 @@ constructor(
     companion object {
         private const val TAG = "QSPreferencesRepository"
         private const val LARGE_TILES_SPECS_KEY = "large_tiles_specs"
+        private const val FEATURED_TILES_SPECS_KEY = "featured_tiles_specs"
         private const val LARGE_TILES_DEFAULT_KEY = "large_tiles_default"
         private const val EDIT_TOOLTIP_SHOWN_KEY = "edit_tooltip_shown"
         const val FILE_NAME = "quick_settings_prefs"

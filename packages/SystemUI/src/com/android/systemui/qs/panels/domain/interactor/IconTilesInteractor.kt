@@ -48,10 +48,21 @@ constructor(
 
     val largeTilesSpecs =
         preferencesInteractor.largeTilesSpecs
-            .onEach { logChange(it) }
+            .onEach { logChange("Large", it) }
             .stateIn(scope, SharingStarted.Eagerly, repo.defaultLargeTiles)
 
-    fun isIconTile(spec: TileSpec): Boolean = !largeTilesSpecs.value.contains(spec)
+    val featuredTilesSpecs =
+        preferencesInteractor.featuredTilesSpecs
+            .onEach { logChange("Featured", it) }
+            .stateIn(scope, SharingStarted.Eagerly, emptySet())
+
+    private val FEATURED_WHITELIST = setOf(
+        "internet"
+    )
+
+    fun isIconTile(spec: TileSpec): Boolean = !largeTilesSpecs.value.contains(spec) && !featuredTilesSpecs.value.contains(spec)
+    fun isLargeTile(spec: TileSpec): Boolean = largeTilesSpecs.value.contains(spec)
+    fun isFeaturedTile(spec: TileSpec): Boolean = featuredTilesSpecs.value.contains(spec)
 
     /** Set the large tiles to be [specs] */
     fun setLargeTiles(specs: Set<TileSpec>) {
@@ -65,6 +76,7 @@ constructor(
 
     fun resetToDefault() {
         preferencesInteractor.setLargeTilesSpecs(repo.defaultLargeTiles)
+        preferencesInteractor.setFeaturedTilesSpecs(emptySet())
     }
 
     fun resize(spec: TileSpec, toIcon: Boolean) {
@@ -72,16 +84,37 @@ constructor(
             return
         }
 
-        val isIcon = !largeTilesSpecs.value.contains(spec)
-        if (toIcon && !isIcon) {
-            preferencesInteractor.setLargeTilesSpecs(largeTilesSpecs.value - spec)
+        val isSmall = isIconTile(spec)
+        val isLarge = isLargeTile(spec)
+        val isFeatured = isFeaturedTile(spec)
+        val canBeFeatured = FEATURED_WHITELIST.contains(spec.spec)
+
+        if (toIcon && !isSmall) {
+            // Shrink from Featured -> Large, or Large -> Small
+            if (isFeatured) {
+                preferencesInteractor.setFeaturedTilesSpecs(featuredTilesSpecs.value - spec)
+                preferencesInteractor.setLargeTilesSpecs(largeTilesSpecs.value + spec)
+            } else if (isLarge) {
+                preferencesInteractor.setLargeTilesSpecs(largeTilesSpecs.value - spec)
+            }
             uiEventLogger.log(
                 /* event= */ QSEditEvent.QS_EDIT_RESIZE_SMALL,
                 /* uid= */ 0,
                 /* packageName= */ spec.metricSpec,
             )
-        } else if (!toIcon && isIcon) {
-            preferencesInteractor.setLargeTilesSpecs(largeTilesSpecs.value + spec)
+        } else if (!toIcon && (isSmall || isLarge) && !isFeatured) {
+            // Expand from Small -> Large, or Large -> Featured (if whitelisted)
+            if (isSmall) {
+                preferencesInteractor.setLargeTilesSpecs(largeTilesSpecs.value + spec)
+            } else if (isLarge) {
+                if (canBeFeatured) {
+                    preferencesInteractor.setLargeTilesSpecs(largeTilesSpecs.value - spec)
+                    preferencesInteractor.setFeaturedTilesSpecs(featuredTilesSpecs.value + spec)
+                } else {
+                    // Normal tiles cycle back to Small if they try to grow past Large
+                    preferencesInteractor.setLargeTilesSpecs(largeTilesSpecs.value - spec)
+                }
+            }
             uiEventLogger.log(
                 /* event= */ QSEditEvent.QS_EDIT_RESIZE_LARGE,
                 /* uid= */ 0,
@@ -94,12 +127,12 @@ constructor(
         return currentTilesInteractor.currentTilesSpecs.contains(spec)
     }
 
-    private fun logChange(specs: Set<TileSpec>) {
+    private fun logChange(type: String, specs: Set<TileSpec>) {
         logBuffer.log(
             LOG_BUFFER_LARGE_TILES_SPECS_CHANGE_TAG,
             LogLevel.DEBUG,
-            { str1 = specs.toString() },
-            { "Large tiles change: $str1" },
+            { str1 = specs.toString(); str2 = type },
+            { "$str2 tiles change: $str1" },
         )
     }
 

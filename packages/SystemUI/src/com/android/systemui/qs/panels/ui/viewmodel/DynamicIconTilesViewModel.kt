@@ -38,6 +38,9 @@ constructor(
     val largeTilesState =
         hydrator.hydratedStateOf(traceName = "largeTiles", source = iconTilesViewModel.largeTiles)
 
+    val featuredTilesState =
+        hydrator.hydratedStateOf(traceName = "featuredTiles", source = iconTilesViewModel.featuredTiles)
+
     override suspend fun onActivated(): Nothing {
         coroutineScope {
             launch { hydrator.activate() }

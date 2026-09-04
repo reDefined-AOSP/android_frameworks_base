@@ -87,18 +87,22 @@ constructor(
         val columns = viewModel.columnsWithMediaViewModel.columns
         val largeTilesSpan = viewModel.columnsWithMediaViewModel.largeSpan
         val largeTiles by viewModel.iconTilesViewModel.largeTilesState
+        val featuredTiles by (viewModel.iconTilesViewModel as? DynamicIconTilesViewModel)?.featuredTilesState ?: viewModel.iconTilesViewModel.featuredTiles.collectAsStateWithLifecycle()
         // Tiles or largeTiles may be updated while this is composed, so listen to any changes
         val sizedTiles =
             remember(tiles, largeTiles, largeTilesSpan) {
                 tiles.map {
-                    SizedTileImpl(it, if (largeTiles.contains(it.spec)) largeTilesSpan else 1)
+                    SizedTileImpl(it, if (largeTiles.contains(it.spec) || featuredTiles.contains(it.spec)) largeTilesSpan else 1)
                 }
             }
         val squishiness by viewModel.squishinessViewModel.squishiness.collectAsStateWithLifecycle()
         val scope = rememberCoroutineScope()
 
-        val packedPages = remember(sizedTiles, columns) {
-            val tilesWithSize = sizedTiles.map { it to com.android.systemui.qs.panels.shared.model.TileSize(it.width, 1) }
+        val packedPages = remember(sizedTiles, columns, featuredTiles) {
+            val tilesWithSize = sizedTiles.map { 
+                val height = if (featuredTiles.contains(it.tile.spec)) 2 else 1
+                it to com.android.systemui.qs.panels.shared.model.TileSize(it.width, height) 
+            }
             com.android.systemui.qs.panels.shared.model.packTilesIntoPages(tilesWithSize, columns = columns, rowsPerPage = 4)
         }
         val packedTiles = packedPages.flatten()
@@ -173,18 +177,19 @@ constructor(
         val columns = columnsViewModel.columns
         val largeTilesSpan = columnsViewModel.largeSpan
         val largeTiles by viewModel.iconTilesViewModel.largeTilesState
+        val featuredTiles by (viewModel.iconTilesViewModel as? DynamicIconTilesViewModel)?.featuredTilesState ?: viewModel.iconTilesViewModel.featuredTiles.collectAsStateWithLifecycle()
 
         val currentTiles by rememberUpdatedState(tiles.filter { it.isCurrent })
         val listState =
             remember(columns, largeTilesSpan) {
                 EditTileListState(
                     currentTiles,
-                    largeTiles,
+                    largeTiles + featuredTiles,
                     columns = columns,
                     largeTilesSpan = largeTilesSpan,
                 )
             }
-        LaunchedEffect(currentTiles, largeTiles) { listState.updateTiles(currentTiles, largeTiles) }
+        LaunchedEffect(currentTiles, largeTiles, featuredTiles) { listState.updateTiles(currentTiles, largeTiles + featuredTiles) }
 
         DefaultEditTileGrid(
             listState = listState,
