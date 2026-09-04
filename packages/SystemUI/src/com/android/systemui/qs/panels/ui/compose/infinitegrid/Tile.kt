@@ -37,6 +37,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyGridScope
@@ -159,6 +160,8 @@ private val TileViewModel.traceName
 fun ContentScope.Tile(
     tile: TileViewModel,
     iconOnly: Boolean,
+    isFeatured: Boolean = false,
+    internetViewModel: com.android.systemui.statusbar.pipeline.shared.ui.viewmodel.InternetTileViewModel? = null,
     squishiness: () -> Float,
     coroutineScope: CoroutineScope,
     bounceableInfo: BounceableInfo?,
@@ -314,6 +317,13 @@ fun ContentScope.Tile(
                                 contentBounceable.iconBounceScale
                             },
                     )
+                } else if (isFeatured && tile.spec.spec == "internet" && internetViewModel != null) {
+                    InternetFeaturedTileContent(
+                        uiState = uiState,
+                        colors = colors,
+                        viewModel = internetViewModel,
+                        modifier = Modifier.fillMaxSize()
+                    )
                 } else {
                     val iconShape by TileDefaults.animateIconShapeAsState(uiState.state)
                     val secondaryClick: (() -> Unit)? =
@@ -370,6 +380,7 @@ fun TileContainer(
     onLongClick: (() -> Unit)?,
     accessibilityUiState: AccessibilityUiState,
     iconOnly: Boolean,
+    isFeatured: Boolean = false,
     isDualTarget: Boolean,
     interactionSource: MutableInteractionSource?,
     modifier: Modifier = Modifier,
@@ -440,6 +451,7 @@ fun Modifier.tileCombinedClickable(
     accessibilityUiState: AccessibilityUiState,
     interactionSource: MutableInteractionSource?,
     iconOnly: Boolean,
+    isFeatured: Boolean = false,
     isDualTarget: Boolean,
 ): Modifier {
     val longPressLabel =

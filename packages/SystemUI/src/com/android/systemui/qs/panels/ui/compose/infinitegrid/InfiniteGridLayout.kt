@@ -46,6 +46,8 @@ import com.android.systemui.qs.panels.ui.viewmodel.BounceableTileViewModel
 import com.android.systemui.qs.panels.ui.viewmodel.DetailsViewModel
 import com.android.systemui.qs.panels.ui.viewmodel.EditTileViewModel
 import com.android.systemui.qs.panels.ui.viewmodel.IconTilesViewModel
+import com.android.systemui.qs.panels.ui.viewmodel.DynamicIconTilesViewModel
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import com.android.systemui.qs.panels.ui.viewmodel.InfiniteGridViewModel
 import com.android.systemui.qs.panels.ui.viewmodel.TextFeedbackContentViewModel
 import com.android.systemui.qs.panels.ui.viewmodel.TileViewModel
@@ -64,6 +66,7 @@ constructor(
     override val viewModelFactory: InfiniteGridViewModel.Factory,
     private val textFeedbackContentViewModelFactory: TextFeedbackContentViewModel.Factory,
     private val tileHapticsViewModelFactoryProvider: TileHapticsViewModelFactoryProvider,
+    private val internetTileViewModel: com.android.systemui.statusbar.pipeline.shared.ui.viewmodel.InternetTileViewModel,
 ) : PaginatableGridLayout {
 
     @Composable
@@ -119,6 +122,8 @@ constructor(
                 Tile(
                     tile = tile.tile,
                     iconOnly = iconTilesViewModel.isIconTile(tile.tile.spec),
+                    isFeatured = featuredTiles.contains(tile.tile.spec),
+                    internetViewModel = if (tile.tile.spec.spec == "internet") internetTileViewModel else null,
                     squishiness = { squishiness },
                     tileHapticsViewModelFactoryProvider = tileHapticsViewModelFactoryProvider,
                     coroutineScope = scope,

@@ -69,7 +69,7 @@ constructor(
 
     // Three symmetrical Flows that can be switched upon based on the value of
     // [DefaultConnectionModel]
-    private val wifiIconFlow: Flow<InternetTileModel> =
+    val wifiIconFlow: Flow<InternetTileModel> =
         wifiInteractor.wifiNetwork.flatMapLatest {
             val wifiIcon = WifiIcon.fromModel(it, context, showHotspotInfo = true)
             if (it is WifiNetworkModel.Active && wifiIcon is WifiIcon.Visible) {
@@ -110,7 +110,7 @@ constructor(
             }
         }
 
-    private val mobileIconFlow: Flow<InternetTileModel> =
+    val mobileIconFlow: Flow<InternetTileModel> =
         mobileIconsInteractor.activeDataIconInteractor.flatMapLatest {
             if (it == null) {
                 notConnectedFlow
