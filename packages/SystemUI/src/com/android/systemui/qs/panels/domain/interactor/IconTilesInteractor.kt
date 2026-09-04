@@ -79,6 +79,26 @@ constructor(
         preferencesInteractor.setFeaturedTilesSpecs(emptySet())
     }
 
+    fun cycleSize(spec: TileSpec) {
+        if (!isCurrent(spec)) return
+        val isSmall = isIconTile(spec)
+        val isLarge = isLargeTile(spec)
+        val isFeatured = isFeaturedTile(spec)
+        val canBeFeatured = FEATURED_WHITELIST.contains(spec.spec)
+        if (isSmall) {
+            preferencesInteractor.setLargeTilesSpecs(largeTilesSpecs.value + spec)
+        } else if (isLarge) {
+            if (canBeFeatured) {
+                preferencesInteractor.setLargeTilesSpecs(largeTilesSpecs.value - spec)
+                preferencesInteractor.setFeaturedTilesSpecs(featuredTilesSpecs.value + spec)
+            } else {
+                preferencesInteractor.setLargeTilesSpecs(largeTilesSpecs.value - spec)
+            }
+        } else if (isFeatured) {
+            preferencesInteractor.setFeaturedTilesSpecs(featuredTilesSpecs.value - spec)
+        }
+    }
+
     fun resize(spec: TileSpec, toIcon: Boolean) {
         if (!isCurrent(spec)) {
             return

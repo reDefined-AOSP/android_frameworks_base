@@ -199,6 +199,7 @@ import com.android.systemui.qs.panels.ui.compose.selection.MutableSelectionState
 import com.android.systemui.qs.panels.ui.compose.selection.ResizingState
 import com.android.systemui.qs.panels.ui.compose.selection.ResizingState.ResizeOperation
 import com.android.systemui.qs.panels.ui.compose.selection.ResizingState.ResizeOperation.FinalResizeOperation
+import com.android.systemui.qs.panels.ui.compose.selection.ResizingState.ResizeOperation.CycleResizeOperation
 import com.android.systemui.qs.panels.ui.compose.selection.ResizingState.ResizeOperation.TemporaryResizeOperation
 import com.android.systemui.qs.panels.ui.compose.selection.StaticTileBadge
 import com.android.systemui.qs.panels.ui.compose.selection.TileState
@@ -284,6 +285,8 @@ sealed interface EditAction {
     data class SetTiles(val tileSpecs: List<TileSpec>) : EditAction
 
     data class ResizeTile(val tileSpec: TileSpec, val toIcon: Boolean) : EditAction
+
+    data class CycleTileSize(val tileSpec: TileSpec) : EditAction
 
     data object ResetGrid : EditAction
 }
@@ -748,6 +751,9 @@ private fun CurrentTilesGrid(
                         is TemporaryResizeOperation -> {
                             currentListState.resizeTile(resizingOperation.spec, resizingOperation.toIcon)
                         }
+                        is CycleResizeOperation -> {
+                            onEditAction(EditAction.CycleTileSize(resizingOperation.spec))
+                        }
                         is FinalResizeOperation -> {
                             with(resizingOperation) {
                                 val isIcon = spec !in listState.largeTilesSpecs
@@ -1077,12 +1083,14 @@ private fun LazyGridItemScope.TileGridCell(
         selectionState.unSelect()
         onRemoveTile(cell.tile.tileSpec)
     }
+    val isFeatured = (dragAndDropState as? EditTileListState)?.featuredTilesSpecs?.contains(cell.tile.tileSpec) == true
+    val tileHeight = if (isFeatured) TileHeight * 2 + 8.dp else TileHeight
     InteractiveTileContainer(
         tileState = tileState,
         resizingState = resizingState,
         modifier =
             modifier
-                .height(TileHeight)
+                .height(tileHeight)
                 .fillMaxWidth()
                 .animateItem(placementSpec = placementSpec)
                 .tileTestTag(cell.isIcon),
@@ -1090,7 +1098,7 @@ private fun LazyGridItemScope.TileGridCell(
             if (tileState == TileState.Removable) {
                 removeTile()
             } else if (tileState == TileState.Selected) {
-                coroutineScope.launch { resizingState.toggleCurrentValue() }
+                onResize(CycleResizeOperation(cell.tile.tileSpec))
             }
         },
         contentDescription = decorationClickLabel,

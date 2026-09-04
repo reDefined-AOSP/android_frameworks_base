@@ -189,12 +189,13 @@ constructor(
             remember(columns, largeTilesSpan) {
                 EditTileListState(
                     currentTiles,
-                    largeTiles + featuredTiles,
+                    largeTiles,
+                    featuredTiles,
                     columns = columns,
                     largeTilesSpan = largeTilesSpan,
                 )
             }
-        LaunchedEffect(currentTiles, largeTiles, featuredTiles) { listState.updateTiles(currentTiles, largeTiles + featuredTiles) }
+        LaunchedEffect(currentTiles, largeTiles, featuredTiles) { listState.updateTiles(currentTiles, largeTiles, featuredTiles) }
 
         DefaultEditTileGrid(
             listState = listState,
@@ -222,6 +223,9 @@ constructor(
                 }
                 EditAction.ResetGrid -> {
                     dialogDelegate.showDialog()
+                }
+                is EditAction.CycleTileSize -> {
+                    iconTilesViewModel.cycleSize(action.tileSpec)
                 }
                 is EditAction.ResizeTile -> {
                     iconTilesViewModel.resize(action.tileSpec, action.toIcon)

@@ -101,5 +101,7 @@ class ResizingState(tileSpec: TileSpec, startsAsIcon: Boolean) {
 
         /** A final resizing operation, used while a resizing movement is done. */
         class FinalResizeOperation(spec: TileSpec, toIcon: Boolean) : ResizeOperation(spec, toIcon)
+        class CycleResizeOperation(spec: TileSpec) : ResizeOperation(spec, false)
+
     }
 }

@@ -38,6 +38,7 @@ import com.android.systemui.qs.pipeline.shared.TileSpec
 class EditTileListState(
     initialTiles: List<EditTileViewModel>,
     initialLargeTiles: Set<TileSpec>,
+    initialFeaturedTiles: Set<TileSpec> = emptySet(),
     val columns: Int,
     val largeTilesSpan: Int,
 ) : DragAndDropState {
@@ -65,9 +66,13 @@ class EditTileListState(
     var largeTilesSpecs: Set<TileSpec> = initialLargeTiles
         private set
 
+    var featuredTilesSpecs: Set<TileSpec> = initialFeaturedTiles
+        private set
+
     /** Update the grid with this new list of tiles and new set of large tileSpecs. */
-    fun updateTiles(tiles: List<EditTileViewModel>, largeTiles: Set<TileSpec>) {
+    fun updateTiles(tiles: List<EditTileViewModel>, largeTiles: Set<TileSpec>, featuredTiles: Set<TileSpec> = emptySet()) {
         largeTilesSpecs = largeTiles
+        featuredTilesSpecs = featuredTiles
         tiles.toGridCells(largeTiles).let {
             _tiles.apply {
                 clear()

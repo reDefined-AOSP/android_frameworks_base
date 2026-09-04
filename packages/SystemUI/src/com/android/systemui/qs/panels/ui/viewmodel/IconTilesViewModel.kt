@@ -34,6 +34,8 @@ interface IconTilesViewModel {
      * If [toIcon] is true, the tile cycles down (Featured -> Large -> Small).
      * If [toIcon] is false, the tile cycles up (Small -> Large -> Featured).
      */
+    fun cycleSize(spec: TileSpec)
+
     fun resize(spec: TileSpec, toIcon: Boolean)
 }
 
@@ -44,6 +46,9 @@ class IconTilesViewModelImpl @Inject constructor(private val interactor: IconTil
     override val featuredTiles = interactor.featuredTilesSpecs
 
     override fun isIconTile(spec: TileSpec): Boolean = interactor.isIconTile(spec)
+
+
+    override fun cycleSize(spec: TileSpec) = interactor.cycleSize(spec)
 
     override fun resize(spec: TileSpec, toIcon: Boolean) = interactor.resize(spec, toIcon)
 }
