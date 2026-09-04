@@ -1182,6 +1182,7 @@ private fun LazyGridItemScope.TileGridCell(
                 tileState = tileState,
                 state = resizingState,
                 progress = progress,
+                modifier = Modifier.fillMaxHeight(),
             )
         }
     }
@@ -1370,6 +1371,7 @@ fun EditTile(
     tileState: TileState,
     state: ResizingState,
     progress: () -> Float,
+    modifier: Modifier = Modifier,
     colors: TileColors = EditModeTileDefaults.editTileColors(),
 ) {
     val iconSizeDiff = CommonTileDefaults.IconSize - CommonTileDefaults.LargeTileIconSize
@@ -1378,7 +1380,7 @@ fun EditTile(
         horizontalArrangement = spacedBy(6.dp),
         verticalAlignment = Alignment.CenterVertically,
         modifier =
-            Modifier.layout { measurable, constraints ->
+            modifier.layout { measurable, constraints ->
                     val (min, max) = state.bounds
                     val currentProgress = progress()
                     // Always display the tile using the large size and trust the parent composable

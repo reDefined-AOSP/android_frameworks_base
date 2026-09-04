@@ -389,7 +389,7 @@ fun TileContainer(
     Box(
         modifier =
             modifier
-                .height(TileHeight)
+                .height(if (isFeatured) TileHeight * 2 + 8.dp else TileHeight)
                 .fillMaxWidth()
                 .tileCombinedClickable(
                     onClick = onClick ?: {},

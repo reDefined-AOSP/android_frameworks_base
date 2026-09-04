@@ -60,6 +60,9 @@ constructor(
     private val largeTiles by
         hydrator.hydratedStateOf(traceName = "largeTiles", source = iconTilesViewModel.largeTiles)
 
+    val featuredTiles by
+        hydrator.hydratedStateOf(traceName = "featuredTiles", source = iconTilesViewModel.featuredTiles)
+
     private val rows: Int
         get() =
             if (mediaInRowViewModel.shouldMediaShowInRow) {
@@ -101,7 +104,7 @@ constructor(
         fun create(): QuickQuickSettingsViewModel
     }
 
-    private fun TileSpec.width(): Int = if (largeTiles.contains(this)) largeTilesSpan else 1
+    private fun TileSpec.width(): Int = if (largeTiles.contains(this) || featuredTiles.contains(this)) largeTilesSpan else 1
 
     companion object {
         /** Behavior of the media carousel in quick quick settings */

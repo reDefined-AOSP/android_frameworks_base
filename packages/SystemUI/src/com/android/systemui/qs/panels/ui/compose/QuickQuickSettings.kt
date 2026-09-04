@@ -64,6 +64,7 @@ fun ContentScope.QuickQuickSettings(
                 Tile(
                     tile = sizedTile.tile,
                     iconOnly = sizedTile.isIcon,
+                    isFeatured = viewModel.featuredTiles.contains(sizedTile.tile.spec),
                     squishiness = { squishiness },
                     coroutineScope = scope,
                     tileHapticsViewModelFactoryProvider =
@@ -93,6 +94,7 @@ fun ContentScope.QuickQuickSettings(
                     Tile(
                         tile = it.tile,
                         iconOnly = it.isIcon,
+                        isFeatured = viewModel.featuredTiles.contains(it.tile.spec),
                         squishiness = { squishiness },
                         coroutineScope = scope,
                         bounceableInfo =
